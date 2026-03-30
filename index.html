@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智启通途 · 智慧交通可视化平台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --primary: #1878FF; --primary-light: #E8F2FF; --primary-dark: #0F5FD4;
+  --accent1: #00B4D8; --accent2: #0EA5E9;
+  --warn: #F59E0B; --warn-light: #FEF3C7;
+  --ok: #10B981; --ok-light: #D1FAE5;
+  --danger: #EF4444; --danger-light: #FEE2E2;
+  --bg: #F0F7FF; --white: #FFFFFF; --card-border: #D4E5F7;
+  --text-1: #0F2C52; --text-2: #4A7FA5; --text-3: #94B8D0;
+  --purple: #7C3AED;
+  --font: 'Noto Sans SC', 'PingFang SC', 'Helvetica Neue', sans-serif;
+  --mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+}
+html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--text-1); }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+a { text-decoration: none; color: inherit; }
+input[type=range] { height: 4px; accent-color: var(--primary); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }
+@keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes countUp { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+/* Layout */
+.app { display: flex; min-height: 100vh; }
+.sidebar { width: 200px; min-width: 200px; height: 100vh; background: var(--white); border-right: 1px solid var(--card-border); display: flex; flex-direction: column; position: fixed; left: 0; top: 0; z-index: 100; }
+.main { margin-left: 200px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+.topbar { height: 48px; background: var(--white); border-bottom: 1px solid var(--card-border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; position: sticky; top: 0; z-index: 50; }
+.content { flex: 1; overflow: auto; }
+.page { padding: 16px 20px; animation: fadeUp 0.2s ease-out; }
+
+/* Sidebar */
+.sidebar-logo { padding: 20px 16px 12px; border-bottom: 1px solid var(--card-border); }
+.sidebar-logo-icon { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, var(--primary), var(--accent1)); display: flex; align-items: center; justify-content: center; }
+.sidebar-nav { flex: 1; padding: 12px 8px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 6px; margin-bottom: 2px; cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; font-size: 13.5px; color: var(--text-2); }
+.nav-item:hover { background: rgba(232,242,255,0.5); }
+.nav-item.active { background: var(--primary-light); border-left-color: var(--primary); color: var(--primary); font-weight: 600; }
+.sidebar-status { padding: 12px 16px; border-top: 1px solid var(--card-border); font-size: 11px; color: var(--text-3); }
+
+/* Card */
+.card { background: var(--white); border-radius: 8px; border: 1px solid var(--card-border); box-shadow: 0 1px 4px rgba(15,44,82,0.06); }
+
+/* Metric Card */
+.metric-card { padding: 16px 18px; flex: 1; min-width: 0; }
+.metric-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.metric-value { font-size: 28px; font-weight: 700; font-family: var(--mono); color: var(--text-1); }
+.metric-unit { font-size: 13px; color: var(--text-2); }
+.metric-label { font-size: 12px; color: var(--text-3); }
+
+/* Tag */
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border: 1px solid var(--primary); border-radius: 6px; background: var(--white); color: var(--primary); font-size: 12px; font-weight: 500; cursor: pointer; font-family: var(--font); transition: all 0.15s; }
+.btn:hover { background: var(--primary); color: #fff; }
+.btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Flex / Grid helpers */
+.flex { display: flex; } .flex-col { flex-direction: column; } .gap-12 { gap: 12px; } .gap-8 { gap: 8px; }
+.items-center { align-items: center; } .justify-between { justify-content: space-between; }
+.flex-1 { flex: 1; min-width: 0; }
+
+/* Table area */
+.alert-bar { width: 3px; border-radius: 2px; flex-shrink: 0; align-self: stretch; }
+
+/* Chat bubble */
+.bubble-user { background: var(--primary); color: #fff; border-radius: 12px 12px 2px 12px; padding: 10px 14px; max-width: 70%; font-size: 13px; line-height: 1.6; }
+.bubble-ai { background: var(--white); border: 1px solid var(--card-border); color: var(--text-1); border-radius: 12px 12px 12px 2px; padding: 10px 14px; max-width: 70%; font-size: 13px; line-height: 1.6; }
+.typing-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+
+/* SVG charts */
+svg text { user-select: none; }
+</style>
+</head>
+<body>
+<div id="app" class="app"></div>
+
+<script>
+// ─────────────────────────────────────────────────────
+// Minimal Virtual DOM / State engine (no React needed)
+// ─────────────────────────────────────────────────────
+const T = {
+  primary:"#1878FF", primaryLight:"#E8F2FF", primaryDark:"#0F5FD4",
+  accent1:"#00B4D8", accent2:"#0EA5E9",
+  warn:"#F59E0B", warnLight:"#FEF3C7",
+  ok:"#10B981", okLight:"#D1FAE5",
+  danger:"#EF4444", dangerLight:"#FEE2E2",
+  bg:"#F0F7FF", white:"#FFFFFF", cardBorder:"#D4E5F7",
+  text1:"#0F2C52", text2:"#4A7FA5", text3:"#94B8D0",
+  purple:"#7C3AED",
+};
+
+function speedColor(v) {
+  if (v >= 60) return T.ok;
+  if (v >= 40) return T.accent1;
+  if (v >= 25) return T.warn;
+  if (v >= 10) return "#F97316";
+  return T.danger;
+}
+
+// ── SVG Icon paths (inline, no lucide dependency) ──
+const Icons = {
+  activity: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+  eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  messageSquare: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  gitBranch: '<line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
+  car: '<path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/>',
+  alertTriangle: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  cpu: '<rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  chevronRight: '<polyline points="9 18 15 12 9 6"/>',
+  chevronLeft: '<polyline points="15 18 9 12 15 6"/>',
+  play: '<polygon points="5 3 19 12 5 21 5 3"/>',
+  pause: '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>',
+  send: '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+  trendingUp: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+  trendingDown: '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>',
+  externalLink: '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
+  barChart3: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+  shieldCheck: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+  layers: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+  brainCircuit: '<circle cx="12" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><path d="M12 7v4m0 4v2M7 12h2m4 0h4"/><circle cx="12" cy="12" r="2"/>',
+  sparkles: '<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>',
+  gauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+};
+
+function icon(name, size=16, color="currentColor") {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;flex-shrink:0">${Icons[name]||''}</svg>`;
+}
+
+// ── Mock Data ──
+const DISTRICTS = ["福田","南山","罗湖","龙华","宝安","盐田","龙岗","坪山"];
+const districtSpeed = DISTRICTS.map(d => ({ name: d, speed: Math.round(25 + Math.random() * 50) }));
+
+const ALERTS = [
+  {level:"danger",loc:"深南大道-华强北段",msg:"车速骤降至8km/h，疑似事故",time:"14:32"},
+  {level:"warn",loc:"北环大道-银湖段",msg:"车流量超阈值35%，预测15分钟后拥堵",time:"14:28"},
+  {level:"danger",loc:"龙岗大道-坂田段",msg:"连续3个时段拥堵指数>2.0",time:"14:25"},
+  {level:"info",loc:"滨海大道-蛇口段",msg:"施工管制已结束，恢复双向通行",time:"14:20"},
+  {level:"warn",loc:"莲花路-景田段",msg:"学校放学高峰，建议绕行",time:"14:15"},
+  {level:"danger",loc:"盐坝高速-大梅沙段",msg:"追尾事故，占用两车道",time:"14:10"},
+  {level:"info",loc:"龙华大道-民治段",msg:"信号优化已生效，通行效率+12%",time:"14:05"},
+];
+
+function hourSpeed() {
+  return Array.from({length:24},(_,h)=>{
+    const b = h>=7&&h<=9?25:h>=17&&h<=19?22:h>=22||h<=5?65:45;
+    return {hour:`${String(h).padStart(2,'0')}:00`,福田:b+Math.random()*12-6,南山:b+5+Math.random()*10-5,罗湖:b-3+Math.random()*10-5};
+  });
+}
+const HOUR_DATA = hourSpeed();
+
+function predGrid(hour) {
+  return Array.from({length:96},(_,i)=>{
+    const peak=(hour>=7&&hour<=9)||(hour>=17&&hour<=19);
+    const b=peak?18:hour>=22||hour<=5?62:42;
+    return {id:i,speed:Math.round(b+Math.random()*30-10),seg:`S-${String(i+1).padStart(3,'0')}`};
+  });
+}
+function predCompare() {
+  return Array.from({length:24},(_,h)=>{
+    const b=h>=7&&h<=9?25:h>=17&&h<=19?22:h>=22||h<=5?65:45;
+    return {hour:`${String(h).padStart(2,'0')}:00`,pred:+(b+Math.random()*8-4).toFixed(1),real:+(b+Math.random()*10-5).toFixed(1)};
+  });
+}
+const COMPARE_DATA = predCompare();
+
+const NETWORK_NODES=[
+  {id:"福田",x:.42,y:.45},{id:"南山",x:.22,y:.52},{id:"罗湖",x:.62,y:.42},{id:"龙华",x:.45,y:.22},
+  {id:"宝安",x:.12,y:.30},{id:"盐田",x:.78,y:.48},{id:"龙岗",x:.72,y:.20},{id:"坪山",x:.88,y:.28},
+  {id:"光明",x:.25,y:.12},{id:"深圳北",x:.38,y:.10},
+];
+const NETWORK_EDGES=[
+  ["福田","南山"],["福田","罗湖"],["福田","龙华"],["南山","宝安"],
+  ["罗湖","盐田"],["龙华","龙岗"],["龙华","光明"],["龙岗","坪山"],
+  ["光明","深圳北"],["深圳北","龙华"],["宝安","光明"],["龙岗","盐田"],
+  ["福田","深圳北"],["南山","龙华"],
+];
+
+const POLICY_OPTS=[
+  {id:"odd-even",title:"单双号限行",desc:"工作日高峰时段按尾号限行",icon:"car"},
+  {id:"metro-ext",title:"地铁延时运营",desc:"末班车延至次日 00:30",icon:"activity"},
+  {id:"congestion-fee",title:"拥堵收费",desc:"核心区高峰时段按里程收费",icon:"gauge"},
+  {id:"bus-lane",title:"扩展公交专用道",desc:"新增 12 条公交专用车道",icon:"layers"},
+];
+const POLICY_ROADS=["深南大道","北环大道","滨海大道","莲花路","龙岗大道","盐坝高速"];
+const POLICY_BEFORE=[28,32,45,35,22,55];
+
+const KNOWLEDGE=[
+  {l:"问答对总数",v:"12,847"},{l:"向量化状态",v:"已完成"},{l:"Embedding 模型",v:"BAAI/bge-large-zh"},
+  {l:"向量维度",v:"1024"},{l:"检索策略",v:"Hybrid (BM25+ANN)"},
+];
+const QA_DIST=[
+  {role:"司机",count:4280,color:T.primary},{role:"行人",count:3150,color:T.ok},
+  {role:"政务机关",count:2860,color:T.purple},{role:"学生",count:1520,color:T.accent1},
+  {role:"物流",count:1037,color:T.warn},
+];
+const QUICK_QS={
+  driver:["如何避开高峰拥堵？","集卡通行时段？","深南大道实时路况？"],
+  pedestrian:["地铁最优换乘路线","公交携带滑板规定","适合老人少走路的出行方案"],
+  gov:["大雾红色预警管控预案","单双号限行仿真效果","各路段流量阈值建议"],
+};
+const AGENT_RESP={
+  driver:{"如何避开高峰拥堵？":"根据实时路网数据，当前早高峰（7:30-9:30）建议避开深南大道华强北至科技园段，可选择北环大道→沙河西路绕行，预计节省约18分钟。晚高峰建议提前至17:00前出发或延后至19:30后。","集卡通行时段？":"根据深圳市交通运输局最新规定：集装箱运输车辆禁行时段为工作日7:00-9:00、17:30-19:30，限行区域为福田区、南山区核心路段。周末及法定节假日不限行。","深南大道实时路况？":"深南大道当前整体车速 28 km/h，处于中度拥堵状态。其中华强北至岗厦段最慢（12 km/h，红色预警），科技园至南头段稍好（35 km/h，缓行）。建议使用滨海大道替代通行，当前车速 52 km/h。",default:"感谢提问！根据深圳交通大数据分析，我已为您查询相关路况信息。如需更详细的出行规划建议，请点击上方按钮跳转至完整版路语者 AI 智能体进行深度对话。"},
+  pedestrian:{"地铁最优换乘路线":"以常见路线为例：从福田口岸到世界之窗，推荐4号线→1号线（在会展中心换乘），全程约35分钟，较3号线绕行方案快约12分钟。","公交携带滑板规定":"根据深圳市公共交通管理条例：可折叠滑板车允许携带乘坐地铁和公交，但需折叠后随身携带，长度不超过130cm。电动滑板车因含电池，不允许带入地铁。","适合老人少走路的出行方案":"针对老年人出行建议：①优先选择始发站上车的公交线路；②地铁出行选择有直梯的出口；③避开早晚高峰时段；④可使用'深圳出行'小程序的适老模式。",default:"好的，我来为您查询相关出行信息。如需获取个性化出行方案，建议点击上方按钮使用完整版路语者 AI 智能体。"},
+  gov:{"大雾红色预警管控预案":"大雾红色预警（能见度<50m）管控预案：①立即启动高速公路全线封闭；②城区主干道限速降至30km/h；③启动雾天信号配时方案；④通知公交公司增发市区线路班次；⑤高架桥/立交匝道视情况封闭。","单双号限行仿真效果":"根据TF-GAN仿真模型预测，实施单双号限行后：全市平均车速提升约18.4 km/h（+34%），高峰时段拥堵路段减少42%，日均CO₂排放降低约11.5吨。详细仿真报告可在「政策沙盘」页面查看。","各路段流量阈值建议":"基于历史数据与模型分析，建议核心路段流量阈值：深南大道≤4,200辆/h，北环大道≤3,800辆/h，滨海大道≤3,500辆/h。超阈值时建议触发动态信号优化和诱导屏发布绕行信息。",default:"已收到您的政务咨询。如需完整政策分析报告，请点击上方按钮跳转至完整版路语者 AI 智能体。"},
+};
+
+// ── State ──
+let state = {
+  page: "dashboard",
+  predHour: 8,
+  predPlaying: false,
+  policySelected: null,
+  policyRunning: false,
+  policyProgress: 0,
+  policyResult: null,
+  agentRole: "driver",
+  agentMessages: [{from:"ai",text:"你好！我是路语者 AI 智能体，基于 RAG + DeepSeek 大模型构建。请问有什么交通出行问题我可以帮助您？"}],
+  agentTyping: false,
+  agentInput: "",
+};
+
+// ── Canvas animation state ──
+let edgeSpeeds = NETWORK_EDGES.map(() => Math.round(10 + Math.random() * 60));
+let particles = NETWORK_EDGES.map(() => Array.from({length:3},()=>Math.random()));
+let canvasRaf = null;
+
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = renderSidebar() + `<div class="main">${renderTopbar()}<div class="content">${renderPage()}</div></div>`;
+  bindEvents();
+  if (state.page === 'dashboard') startCanvas();
+}
+
+function renderSidebar() {
+  const items = [
+    {id:"dashboard",label:"实时大屏",ic:"activity"},
+    {id:"predict",label:"拥堵预测",ic:"eye"},
+    {id:"agent",label:"路语者",ic:"messageSquare"},
+    {id:"policy",label:"政策沙盘",ic:"gitBranch"},
+  ];
+  return `<div class="sidebar">
+    <div class="sidebar-logo"><div style="display:flex;align-items:center;gap:8px">
+      <div class="sidebar-logo-icon">${icon('globe',18,'#fff')}</div>
+      <div><div style="font-weight:700;font-size:15px;color:var(--text-1)">智启通途</div>
+      <div style="font-size:9px;color:var(--text-3);letter-spacing:1px;font-family:var(--mono)">SMART TRAFFIC</div></div>
+    </div></div>
+    <div class="sidebar-nav">${items.map(it=>`<div class="nav-item ${state.page===it.id?'active':''}" data-nav="${it.id}">${icon(it.ic,17,state.page===it.id?'var(--primary)':'var(--text-3)')}<span>${it.label}</span></div>`).join('')}</div>
+    <div class="sidebar-status">
+      <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px"><div style="width:6px;height:6px;border-radius:3px;background:var(--ok)"></div><span>系统运行正常</span></div>
+      <div style="margin-bottom:3px">模型版本: TF-GAN v2.4</div>
+      <div style="margin-bottom:3px">数据来源: 深圳交通局</div>
+      <div style="font-family:var(--mono)">延迟: 23ms</div>
+    </div>
+  </div>`;
+}
+
+function renderTopbar() {
+  const names={dashboard:"实时大屏",predict:"拥堵预测",agent:"路语者",policy:"政策沙盘"};
+  const now=new Date();
+  return `<div class="topbar">
+    <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-2)">
+      <span style="color:var(--text-3)">智启通途</span>${icon('chevronRight',13,'var(--text-3)')}<span style="color:var(--text-1);font-weight:600">${names[state.page]}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;font-size:12px">
+      <div style="display:flex;align-items:center;gap:5px;color:var(--text-3)"><div style="width:6px;height:6px;border-radius:3px;background:var(--ok)"></div>数据实时同步</div>
+      <div style="background:var(--danger);color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:600">${icon('bell',11,'#fff')} 3</div>
+      <span style="color:var(--text-2)">${now.toLocaleDateString('zh-CN')}</span>
+      <span id="topbar-time" style="font-family:var(--mono);color:var(--text-1);font-weight:600;font-size:14px;min-width:62px">${now.toLocaleTimeString('zh-CN',{hour12:false})}</span>
+    </div>
+  </div>`;
+}
+
+// ── time update ──
+setInterval(()=>{
+  const el=document.getElementById('topbar-time');
+  if(el) el.textContent=new Date().toLocaleTimeString('zh-CN',{hour12:false});
+},1000);
+
+function renderPage() {
+  if(state.page==='dashboard') return renderDashboard();
+  if(state.page==='predict') return renderPrediction();
+  if(state.page==='agent') return renderAgent();
+  if(state.page==='policy') return renderPolicy();
+  return '';
+}
+
+// ─── SVG Chart helpers ─────────────────────────
+function svgAreaChart(data,keys,colors,W=500,H=200) {
+  const p={t:20,r:60,b:30,l:40},cw=W-p.l-p.r,ch=H-p.t-p.b,mx=90,xs=cw/(data.length-1);
+  let s=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:100%">`;
+  [0,30,60,90].forEach(v=>{const y=p.t+ch-(v/mx)*ch;s+=`<line x1="${p.l}" y1="${y}" x2="${p.l+cw}" y2="${y}" stroke="var(--card-border)" stroke-width="0.5"/><text x="${p.l-6}" y="${y+3}" text-anchor="end" fill="var(--text-3)" font-size="9" font-family="var(--mono)">${v}</text>`;});
+  data.forEach((d,i)=>{if(i%4===0) s+=`<text x="${p.l+i*xs}" y="${H-8}" text-anchor="middle" fill="var(--text-3)" font-size="8" font-family="var(--mono)">${d.hour}</text>`;});
+  keys.forEach((k,ki)=>{
+    const pts=data.map((d,i)=>({x:p.l+i*xs,y:p.t+ch-(Math.max(0,Math.min(mx,d[k]))/mx)*ch}));
+    const line=pts.map(pt=>`${pt.x},${pt.y}`).join(' ');
+    const area=`M${pts[0].x},${p.t+ch} `+pts.map(pt=>`L${pt.x},${pt.y}`).join(' ')+` L${pts[pts.length-1].x},${p.t+ch} Z`;
+    s+=`<defs><linearGradient id="ag${ki}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${colors[ki]}" stop-opacity="0.3"/><stop offset="100%" stop-color="${colors[ki]}" stop-opacity="0.02"/></linearGradient></defs>`;
+    s+=`<path d="${area}" fill="url(#ag${ki})"/><polyline points="${line}" fill="none" stroke="${colors[ki]}" stroke-width="2"/>`;
+  });
+  keys.forEach((k,i)=>{s+=`<g transform="translate(${p.l+cw-10-(keys.length-1-i)*60},10)"><rect width="10" height="3" rx="1.5" fill="${colors[i]}"/><text x="14" y="4" fill="var(--text-2)" font-size="9">${k}</text></g>`;});
+  return s+'</svg>';
+}
+
+function svgBarChart(data,xK,yK,W=500,H=200,colorFn) {
+  const mx=Math.max(...data.map(d=>d[yK]))*1.2,p={t:20,r:10,b:35,l:35},cw=W-p.l-p.r,ch=H-p.t-p.b;
+  const bw=Math.min(36,cw/data.length*0.6),gap=cw/data.length;
+  let s=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:100%">`;
+  data.forEach((d,i)=>{
+    const x=p.l+i*gap+(gap-bw)/2,h=(d[yK]/mx)*ch,y=p.t+ch-h,c=colorFn?colorFn(d[yK]):T.primary;
+    s+=`<rect x="${x}" y="${y}" width="${bw}" height="${h}" rx="3" fill="${c}" opacity="0.85"/><text x="${x+bw/2}" y="${y-4}" text-anchor="middle" fill="var(--text-1)" font-size="9" font-weight="600" font-family="var(--mono)">${d[yK]}</text><text x="${x+bw/2}" y="${p.t+ch+14}" text-anchor="middle" fill="var(--text-2)" font-size="8">${d[xK]}</text>`;
+  });
+  return s+'</svg>';
+}
+
+function svgDualBar(data,xK,y1K,y2K,c1,c2,l1,l2,W=560,H=220,showY2=true) {
+  const vals=data.flatMap(d=>showY2?[d[y1K],d[y2K]]:[d[y1K]]),mx=Math.max(...vals)*1.25;
+  const p={t:30,r:10,b:40,l:35},cw=W-p.l-p.r,ch=H-p.t-p.b,gap=cw/data.length,bw=Math.min(20,gap*0.3);
+  let s=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:100%">`;
+  s+=`<rect x="${p.l}" y="6" width="10" height="4" rx="2" fill="${c1}"/><text x="${p.l+14}" y="11" fill="var(--text-2)" font-size="9">${l1}</text>`;
+  s+=`<rect x="${p.l+80}" y="6" width="10" height="4" rx="2" fill="${showY2?c2:'#ccc'}"/><text x="${p.l+94}" y="11" fill="var(--text-2)" font-size="9">${l2}</text>`;
+  data.forEach((d,i)=>{
+    const cx=p.l+i*gap+gap/2,h1=(d[y1K]/mx)*ch,h2=showY2?(d[y2K]/mx)*ch:0;
+    s+=`<rect x="${cx-bw-1}" y="${p.t+ch-h1}" width="${bw}" height="${h1}" rx="2" fill="${c1}" opacity="0.8"/><text x="${cx-bw/2-1}" y="${p.t+ch-h1-3}" text-anchor="middle" fill="var(--text-1)" font-size="8" font-family="var(--mono)">${d[y1K]}</text>`;
+    s+=`<rect x="${cx+1}" y="${p.t+ch-h2}" width="${bw}" height="${h2||0}" rx="2" fill="${showY2?c2:'#D1D5DB'}" opacity="${showY2?0.8:0.3}"/>`;
+    if(showY2) s+=`<text x="${cx+bw/2+1}" y="${p.t+ch-h2-3}" text-anchor="middle" fill="var(--text-1)" font-size="8" font-family="var(--mono)">${d[y2K]}</text>`;
+    s+=`<text x="${cx}" y="${p.t+ch+16}" text-anchor="middle" fill="var(--text-2)" font-size="8">${d[xK]}</text>`;
+  });
+  return s+'</svg>';
+}
+
+function svgLineCompare(data,W=560,H=200) {
+  const mx=80,p={t:20,r:60,b:30,l:40},cw=W-p.l-p.r,ch=H-p.t-p.b,xs=cw/(data.length-1);
+  const toY=v=>p.t+ch-(Math.max(0,Math.min(mx,v))/mx)*ch;
+  let s=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:100%">`;
+  [0,20,40,60,80].forEach(v=>{const y=toY(v);s+=`<line x1="${p.l}" y1="${y}" x2="${p.l+cw}" y2="${y}" stroke="var(--card-border)" stroke-width="0.5"/><text x="${p.l-6}" y="${y+3}" text-anchor="end" fill="var(--text-3)" font-size="9" font-family="var(--mono)">${v}</text>`;});
+  s+=`<polyline points="${data.map((d,i)=>`${p.l+i*xs},${toY(d.pred)}`).join(' ')}" fill="none" stroke="${T.primary}" stroke-width="2"/>`;
+  s+=`<polyline points="${data.map((d,i)=>`${p.l+i*xs},${toY(d.real)}`).join(' ')}" fill="none" stroke="${T.accent1}" stroke-width="2" stroke-dasharray="6 3"/>`;
+  s+=`<rect x="${p.l+cw-5}" y="6" width="10" height="3" rx="1.5" fill="${T.primary}"/><text x="${p.l+cw+8}" y="10" fill="var(--text-2)" font-size="9">预测</text>`;
+  s+=`<rect x="${p.l+cw-5}" y="18" width="10" height="3" rx="1.5" fill="${T.accent1}"/><text x="${p.l+cw+8}" y="22" fill="var(--text-2)" font-size="9">真实</text>`;
+  return s+'</svg>';
+}
+
+function metricCard(ic,label,value,unit,change,color,note='') {
+  const bg=color+'18';
+  const arrow=change!==undefined?(change>0?`${icon('trendingUp',13,T.ok)}<span style="font-size:12px;font-family:var(--mono);color:${T.ok}">+${change}%</span>`:`${icon('trendingDown',13,T.danger)}<span style="font-size:12px;font-family:var(--mono);color:${T.danger}">${change}%</span>`):'';
+  return `<div class="card metric-card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div class="metric-icon" style="background:${bg}">${icon(ic,18,color)}</div><span class="metric-label">${label}</span></div>
+    <div style="display:flex;align-items:baseline;gap:4px"><span class="metric-value">${value}</span>${unit?`<span class="metric-unit">${unit}</span>`:''}</div>
+    ${arrow?`<div style="display:flex;align-items:center;gap:3px;margin-top:6px">${arrow}</div>`:''}
+    ${note?`<div style="font-size:11px;color:var(--text-3);margin-top:4px">${note}</div>`:''}
+  </div>`;
+}
+
+// ─── DASHBOARD ─────────────────────────────────
+function renderDashboard() {
+  const alertC={danger:T.danger,warn:T.warn,info:T.accent1};
+  const legend=["畅通",T.ok,"缓行",T.accent1,"轻度拥堵",T.warn,"中度拥堵","#F97316","严重拥堵",T.danger];
+  let legendH='';for(let i=0;i<legend.length;i+=2) legendH+=`<span style="display:flex;align-items:center;gap:3px"><span style="width:16px;height:3px;border-radius:2px;background:${legend[i+1]};display:inline-block"></span>${legend[i]}</span>`;
+
+  return `<div class="page" style="display:flex;flex-direction:column;gap:12px">
+    <div class="flex gap-12">
+      ${metricCard('car','在线营运车辆数',18742,'辆',3.2,T.primary)}
+      ${metricCard('activity','全市平均车速',42,'km/h',-5.1,T.accent1)}
+      ${metricCard('alertTriangle','拥堵路段数量',23,'条',12.3,T.warn)}
+      ${metricCard('cpu','今日预测准确率',94,'%',1.8,T.ok)}
+    </div>
+    <div class="flex gap-12" style="min-height:340px">
+      <div class="card" style="flex:2;padding:16px;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-weight:700;font-size:14px">深圳路网实时态势</span>
+          <div style="display:flex;gap:10px;font-size:10px;color:var(--text-3)">${legendH}</div>
+        </div>
+        <div style="flex:1;border-radius:6px;overflow:hidden;background:var(--bg)"><canvas id="netCanvas" style="width:100%;height:100%;display:block"></canvas></div>
+      </div>
+      <div class="card" style="flex:1;padding:16px;display:flex;flex-direction:column;max-height:370px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-weight:700;font-size:14px">实时预警</span><span style="background:var(--danger);color:#fff;border-radius:8px;padding:1px 7px;font-size:11px;font-weight:600">${ALERTS.filter(a=>a.level==='danger').length}</span></div>
+        <div style="flex:1;overflow:auto">${ALERTS.map((a,i)=>`<div style="display:flex;gap:10px;padding:9px 0;${i<ALERTS.length-1?'border-bottom:1px solid var(--card-border)':''}"><div class="alert-bar" style="background:${alertC[a.level]||T.accent1}"></div><div style="flex:1"><div style="display:flex;justify-content:space-between"><span style="font-size:12.5px;font-weight:600;color:${alertC[a.level]}">${a.loc}</span><span style="font-size:10px;color:var(--text-3);font-family:var(--mono)">${a.time}</span></div><div style="font-size:11px;color:var(--text-2);margin-top:2px">${a.msg}</div></div></div>`).join('')}</div>
+      </div>
+    </div>
+    <div class="flex gap-12">
+      <div class="card" style="flex:1;padding:16px"><div style="font-weight:700;font-size:14px;margin-bottom:8px">全天分区速度曲线</div>${svgAreaChart(HOUR_DATA,['福田','南山','罗湖'],[T.primary,T.accent1,T.warn])}</div>
+      <div class="card" style="flex:1;padding:16px"><div style="font-weight:700;font-size:14px;margin-bottom:8px">各区当前速度对比</div>${svgBarChart(districtSpeed,'name','speed',500,200,speedColor)}</div>
+    </div>
+  </div>`;
+}
+
+// ─── CANVAS ──────────────────────────────────
+function startCanvas() {
+  cancelAnimationFrame(canvasRaf);
+  const canvas=document.getElementById('netCanvas');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const nodeMap={};NETWORK_NODES.forEach(n=>nodeMap[n.id]=n);
+
+  function draw(){
+    const W=canvas.width=canvas.offsetWidth*2,H=canvas.height=canvas.offsetHeight*2;
+    ctx.scale(2,2);const w=canvas.offsetWidth,h=canvas.offsetHeight;ctx.clearRect(0,0,w,h);
+    NETWORK_EDGES.forEach(([a,b],i)=>{
+      const na=nodeMap[a],nb=nodeMap[b],spd=edgeSpeeds[i],col=speedColor(spd);
+      ctx.beginPath();ctx.moveTo(na.x*w,na.y*h);ctx.lineTo(nb.x*w,nb.y*h);ctx.strokeStyle=col;ctx.lineWidth=3;ctx.stroke();
+      const ps=particles[i],sf=.001+(spd/80)*.004;
+      ps.forEach((p,j)=>{ps[j]=(p+sf)%1;const px=na.x*w+(nb.x*w-na.x*w)*ps[j],py=na.y*h+(nb.y*h-na.y*h)*ps[j];ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fillStyle=col;ctx.globalAlpha=.8;ctx.fill();ctx.globalAlpha=1;});
+    });
+    NETWORK_NODES.forEach(n=>{
+      const x=n.x*w,y=n.y*h;
+      const rel=NETWORK_EDGES.reduce((a,[ea,eb],i)=>{if(ea===n.id||eb===n.id)a.push(edgeSpeeds[i]);return a;},[]);
+      const avg=rel.reduce((s,v)=>s+v,0)/rel.length;
+      if(avg<25){const pulse=.3+.3*Math.sin(Date.now()/400);ctx.beginPath();ctx.arc(x,y,18,0,Math.PI*2);ctx.fillStyle=`rgba(239,68,68,${pulse})`;ctx.fill();}
+      ctx.beginPath();ctx.arc(x,y,10,0,Math.PI*2);ctx.fillStyle=speedColor(avg);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+      ctx.fillStyle=T.text1;ctx.font=`600 11px ${getComputedStyle(document.body).fontFamily}`;ctx.textAlign='center';ctx.fillText(n.id,x,y-16);
+    });
+    canvasRaf=requestAnimationFrame(draw);
+  }
+  draw();
+}
+setInterval(()=>{edgeSpeeds=edgeSpeeds.map(s=>Math.max(5,Math.min(80,s+Math.round((Math.random()-.5)*6))));},3000);
+
+// ─── PREDICTION ──────────────────────────────
+function renderPrediction() {
+  const h=state.predHour,grid=predGrid(h);
+  const congRate=Math.round(grid.filter(g=>g.speed<25).length/grid.length*100);
+  const pTag=h>=7&&h<=9?['早高峰',T.danger]:h>=17&&h<=19?['晚高峰',T.warn]:h>=22||h<=5?['夜间',T.accent1]:['平峰',T.ok];
+
+  return `<div class="page" style="display:flex;flex-direction:column;gap:12px">
+    <div class="flex gap-12">
+      ${metricCard('clock','当前预测时间点',`${String(h).padStart(2,'0')}:00`,'',undefined,T.primary)}
+      ${metricCard('activity','预测 MAE','2.34','km/h',undefined,T.accent1,'平均绝对误差')}
+      ${metricCard('alertTriangle','当前时段拥堵率',congRate,'%',undefined,congRate>40?T.danger:T.warn)}
+      ${metricCard('shieldCheck','模型置信度','91.2','%',undefined,T.ok)}
+    </div>
+    <div class="card" style="padding:16px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:12px">速度预测热力格</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="btn" id="pred-prev">${icon('chevronLeft',14)} 前一小时</button>
+        <button class="btn" id="pred-play" style="background:${state.predPlaying?T.dangerLight:T.primaryLight};color:${state.predPlaying?T.danger:T.primary};border-color:${state.predPlaying?T.danger:T.primary}">${state.predPlaying?icon('pause',14)+' 暂停':icon('play',14)+' 播放时序'}</button>
+        <button class="btn" id="pred-next">后一小时 ${icon('chevronRight',14)}</button>
+        <input type="range" min="0" max="23" value="${h}" id="pred-slider" style="flex:1;min-width:120px">
+        <span style="font-family:var(--mono);font-size:14px;font-weight:600">${String(h).padStart(2,'0')}:00</span>
+        <span class="tag" style="background:${pTag[1]}18;color:${pTag[1]}">${pTag[0]}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(16,1fr);gap:3px">
+        ${grid.map(g=>`<div style="aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:${speedColor(g.speed)};transition:background 0.3s;cursor:pointer" title="${g.seg} · ${g.speed}km/h · ${g.speed>=40?'畅通':g.speed>=25?'缓行':'拥堵'}"><span style="font-size:9px;font-family:var(--mono);color:#fff;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,.3)">${g.speed}</span></div>`).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:8px">模型: TF-GAN v2.4 · 输入窗口: 12个时间片(60min) · 96条路段</div>
+    </div>
+    <div class="card" style="padding:16px"><div style="font-weight:700;font-size:14px;margin-bottom:8px">福田核心区：预测 vs 真实速度</div>${svgLineCompare(COMPARE_DATA)}</div>
+  </div>`;
+}
+
+let predInterval=null;
+function startPredPlay(){
+  state.predPlaying=true;
+  predInterval=setInterval(()=>{
+    if(state.predHour>=23){state.predPlaying=false;clearInterval(predInterval);render();return;}
+    state.predHour++;render();
+  },1200);
+}
+function stopPredPlay(){state.predPlaying=false;clearInterval(predInterval);}
+
+// ─── AGENT ───────────────────────────────────
+function renderAgent() {
+  const roles=[{id:"driver",label:"司机",color:T.primary,ic:"car"},{id:"pedestrian",label:"行人",color:T.ok,ic:"activity"},{id:"gov",label:"政务机关",color:T.purple,ic:"layers"}];
+  const cur=roles.find(r=>r.id===state.agentRole);
+  const phs={driver:"请输入出行问题，如：如何避开拥堵？",pedestrian:"请输入出行问题，如：地铁换乘？",gov:"请输入政策咨询，如：限行仿真效果？"};
+
+  return `<div class="page" style="display:flex;gap:12px;height:calc(100vh - 48px - 32px)">
+    <div class="card" style="width:200px;min-width:200px;padding:16px;display:flex;flex-direction:column">
+      <div style="font-weight:700;font-size:13px;margin-bottom:12px">角色切换</div>
+      ${roles.map(r=>`<div class="agent-role" data-role="${r.id}" style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:6px;margin-bottom:4px;cursor:pointer;border:1.5px solid ${state.agentRole===r.id?r.color:'transparent'};background:${state.agentRole===r.id?r.color+'12':'transparent'};transition:all 0.15s">${icon(r.ic,15,state.agentRole===r.id?r.color:'var(--text-3)')}<span style="font-size:12.5px;font-weight:${state.agentRole===r.id?600:400};color:${state.agentRole===r.id?r.color:'var(--text-2)'}">${r.label}</span></div>`).join('')}
+      <div style="margin-top:20px;font-weight:600;font-size:12px;color:var(--text-2);margin-bottom:8px">快捷提问</div>
+      ${QUICK_QS[state.agentRole].map(q=>`<div class="agent-quick" data-q="${q}" style="padding:8px 10px;border-radius:6px;margin-bottom:4px;font-size:11.5px;color:var(--text-2);background:var(--bg);cursor:pointer;border:1px solid var(--card-border);transition:all 0.15s">${q}</div>`).join('')}
+    </div>
+    <div class="card" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:10px 16px;border-bottom:1px solid var(--card-border);display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;border-radius:50%;background:${cur.color}20;display:flex;align-items:center;justify-content:center">${icon('brainCircuit',18,cur.color)}</div>
+        <div><div style="font-weight:700;font-size:14px">路语者 AI 智能体</div><div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-3)"><span style="width:6px;height:6px;border-radius:3px;background:var(--ok);display:inline-block"></span>在线 · ${cur.label}模式 · RAG + DeepSeek</div></div>
+        <div style="margin-left:auto"><a href="https://appbuilder.baidu.com/s/dB42RTdy" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:5px;padding:7px 16px;border-radius:8px;background:linear-gradient(135deg,${T.primary},${T.accent1});color:#fff;font-size:12.5px;font-weight:600;box-shadow:0 2px 8px ${T.primary}40">${icon('externalLink',14,'#fff')} 打开完整版 AI 智能体</a></div>
+      </div>
+      <div id="chat-scroll" style="flex:1;overflow:auto;padding:16px 20px">
+        ${state.agentMessages.map(m=>`<div style="display:flex;justify-content:${m.from==='user'?'flex-end':'flex-start'};margin-bottom:12px;animation:msgIn 0.25s ease-out">${m.from==='ai'?`<div style="width:28px;height:28px;border-radius:50%;background:${cur.color}20;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:8px;margin-top:2px">${icon('brainCircuit',14,cur.color)}</div>`:''}<div class="${m.from==='user'?'bubble-user':'bubble-ai'}">${m.text}</div></div>`).join('')}
+        ${state.agentTyping?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><div style="width:28px;height:28px;border-radius:50%;background:${cur.color}20;display:flex;align-items:center;justify-content:center;flex-shrink:0">${icon('brainCircuit',14,cur.color)}</div><div style="padding:10px 18px;border-radius:12px 12px 12px 2px;background:var(--white);border:1px solid var(--card-border);display:flex;gap:4px"><span class="typing-dot" style="background:${cur.color};animation:bounce 1s ease-in-out 0s infinite"></span><span class="typing-dot" style="background:${cur.color};animation:bounce 1s ease-in-out 0.15s infinite"></span><span class="typing-dot" style="background:${cur.color};animation:bounce 1s ease-in-out 0.3s infinite"></span></div></div>`:''}
+      </div>
+      <div style="padding:12px 16px;border-top:1px solid var(--card-border);display:flex;gap:8px;align-items:center">
+        <input id="chat-input" type="text" value="${state.agentInput.replace(/"/g,'&quot;')}" placeholder="${phs[state.agentRole]}" style="flex:1;padding:10px 14px;border-radius:8px;border:1px solid var(--card-border);outline:none;font-size:13px;font-family:var(--font);color:var(--text-1)">
+        <button class="btn btn-primary" id="chat-send" style="padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600" ${state.agentTyping?'disabled':''}>${icon('send',14,'#fff')} 发送</button>
+      </div>
+    </div>
+    <div class="card" style="width:220px;min-width:220px;padding:16px;display:flex;flex-direction:column;gap:16px">
+      <a href="https://appbuilder.baidu.com/s/dB42RTdy" target="_blank" rel="noopener noreferrer" style="display:block;padding:14px;border-radius:8px;background:linear-gradient(135deg,${T.primary}10,${T.accent1}15);border:1px solid ${T.primary}30">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">${icon('sparkles',14,T.primary)}<span style="font-size:12px;font-weight:700;color:${T.primary}">完整版 AI 智能体</span></div>
+        <div style="font-size:11px;color:var(--text-2);line-height:1.5;margin-bottom:8px">点击跳转至百度 AppBuilder 体验完整的路语者 AI 多轮对话能力</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 0;border-radius:6px;background:${T.primary};color:#fff;font-size:11.5px;font-weight:600">${icon('externalLink',12,'#fff')} 立即体验</div>
+      </a>
+      <div><div style="font-weight:700;font-size:13px;margin-bottom:10px">知识库状态</div>${KNOWLEDGE.map(s=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--card-border)"><span style="font-size:11px;color:var(--text-3)">${s.l}</span><span style="font-size:11px;font-family:var(--mono);font-weight:500">${s.v}</span></div>`).join('')}</div>
+      <div><div style="font-weight:700;font-size:13px;margin-bottom:10px">问答对分布</div>${QA_DIST.map(d=>`<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="color:var(--text-2)">${d.role}</span><span style="font-family:var(--mono);font-weight:500">${d.count.toLocaleString()}</span></div><div style="height:5px;border-radius:3px;background:var(--bg)"><div style="height:100%;border-radius:3px;background:${d.color};width:${(d.count/QA_DIST[0].count)*100}%"></div></div></div>`).join('')}</div>
+    </div>
+  </div>`;
+}
+
+function agentSend(text) {
+  const msg=text||state.agentInput.trim();
+  if(!msg||state.agentTyping) return;
+  state.agentInput='';
+  state.agentMessages.push({from:'user',text:msg});
+  state.agentTyping=true;
+  render();
+  setTimeout(()=>{
+    const el=document.getElementById('chat-scroll');if(el) el.scrollTop=el.scrollHeight;
+  },50);
+  setTimeout(()=>{
+    const resp=AGENT_RESP[state.agentRole];
+    state.agentMessages.push({from:'ai',text:resp[msg]||resp.default});
+    state.agentTyping=false;
+    render();
+    setTimeout(()=>{const el=document.getElementById('chat-scroll');if(el) el.scrollTop=el.scrollHeight;},50);
+  },800+Math.random()*1200);
+}
+
+// ─── POLICY ──────────────────────────────────
+function renderPolicy() {
+  const sel=state.policySelected,run=state.policyRunning,prog=state.policyProgress,res=state.policyResult;
+  const resultItems=res?[
+    {l:"全市平均速度变化",v:res.speed,c:T.ok},{l:"高峰车流量变化",v:res.flow,c:T.ok},
+    {l:"CO₂ 减排估算",v:res.co2,c:T.primary},{l:"公共交通分担率",v:res.transit,c:T.primary},
+    {l:"路网拥堵指数",v:res.congestion,c:T.warn},{l:"年均节约时间成本",v:res.cost,c:T.purple},
+  ]:[];
+  const barData=POLICY_ROADS.map((r,i)=>({road:r,before:POLICY_BEFORE[i],after:res?res.afterSpeeds[i]:POLICY_BEFORE[i]}));
+
+  return `<div class="page" style="display:flex;flex-direction:column;gap:12px">
+    <div class="flex gap-12">
+      <div class="card" style="flex:1;padding:16px">
+        <div style="font-weight:700;font-size:14px;margin-bottom:12px">政策方案选择</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+          ${POLICY_OPTS.map(p=>{const active=sel===p.id;return `<div class="policy-opt" data-pid="${p.id}" style="padding:12px;border-radius:8px;cursor:${run?'not-allowed':'pointer'};border:${active?'2px solid '+T.warn:'1px solid var(--card-border)'};background:${active?T.warnLight:'var(--white)'};transition:all 0.15s"><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">${icon(p.icon,15,active?T.warn:'var(--text-3)')}<span style="font-weight:600;font-size:13px">${p.title}</span></div><div style="font-size:11px;color:var(--text-2)">${p.desc}</div></div>`;}).join('')}
+        </div>
+        <button id="policy-run" class="btn btn-primary" style="width:100%;padding:10px;border-radius:8px;font-size:14px;font-weight:600;justify-content:center;${(!sel||run)?'opacity:0.4;cursor:not-allowed':''}" ${(!sel||run)?'disabled':''}>${run?`<span style="display:inline-block;animation:spin 1s linear infinite;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%"></span> 运行中 ${Math.round(prog)}%`:`${icon('sparkles',16,'#fff')} 运行仿真`}</button>
+        ${run?`<div style="height:4px;border-radius:2px;background:var(--bg);margin-top:8px;overflow:hidden"><div style="height:100%;background:var(--primary);border-radius:2px;width:${prog}%;transition:width 0.15s"></div></div>`:''}
+      </div>
+      <div class="card" style="flex:1;padding:16px">
+        <div style="font-weight:700;font-size:14px;margin-bottom:12px">仿真结果摘要</div>
+        ${!res?`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:var(--text-3)">${icon('barChart3',40,'var(--card-border)')}<div style="margin-top:10px;font-size:13px">选择方案并运行仿真</div></div>`:`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${resultItems.map(r=>`<div style="padding:10px 12px;border-radius:6px;border:1px solid var(--card-border);background:${r.c}08"><div style="font-size:11px;color:var(--text-3);margin-bottom:4px">${r.l}</div><div style="font-size:18px;font-weight:700;font-family:var(--mono);color:${r.c}">${r.v}</div></div>`).join('')}</div>`}
+      </div>
+    </div>
+    <div class="card" style="padding:16px"><div style="font-weight:700;font-size:14px;margin-bottom:8px">路段速度对比（km/h）</div>${svgDualBar(barData,'road','before','after',T.warn,T.ok,'实施前','实施后',560,220,!!res)}</div>
+  </div>`;
+}
+
+function runSimulation() {
+  if(!state.policySelected||state.policyRunning) return;
+  state.policyRunning=true;state.policyProgress=0;state.policyResult=null;render();
+  let p=0;
+  const id=setInterval(()=>{
+    p+=5+Math.random()*12;
+    if(p>=100){
+      p=100;clearInterval(id);state.policyRunning=false;
+      state.policyResult={speed:"+18.4 km/h",flow:"-32.1%",co2:"-4,200 吨/年",transit:"+12.6%",congestion:"1.42 → 1.08",cost:"约 ¥12 亿元",afterSpeeds:POLICY_BEFORE.map(v=>Math.round(v+8+Math.random()*15))};
+    }
+    state.policyProgress=Math.min(p,100);render();
+  },150);
+}
+
+// ─── Event binding ───────────────────────────
+function bindEvents() {
+  document.querySelectorAll('[data-nav]').forEach(el=>el.onclick=()=>{
+    cancelAnimationFrame(canvasRaf);stopPredPlay();
+    state.page=el.dataset.nav;render();
+  });
+
+  // Prediction controls
+  const ps=document.getElementById('pred-slider');
+  if(ps) ps.oninput=e=>{stopPredPlay();state.predHour=+e.target.value;render();};
+  const pp=document.getElementById('pred-prev');
+  if(pp) pp.onclick=()=>{stopPredPlay();state.predHour=Math.max(0,state.predHour-1);render();};
+  const pn=document.getElementById('pred-next');
+  if(pn) pn.onclick=()=>{stopPredPlay();state.predHour=Math.min(23,state.predHour+1);render();};
+  const ppl=document.getElementById('pred-play');
+  if(ppl) ppl.onclick=()=>{if(state.predPlaying){stopPredPlay();render();}else startPredPlay();};
+
+  // Agent
+  document.querySelectorAll('.agent-role').forEach(el=>el.onclick=()=>{
+    state.agentRole=el.dataset.role;
+    state.agentMessages=[{from:'ai',text:`已切换到「${el.querySelector('span').textContent}」模式。请问有什么可以帮助您的？`}];
+    state.agentTyping=false;state.agentInput='';render();
+  });
+  document.querySelectorAll('.agent-quick').forEach(el=>el.onclick=()=>agentSend(el.dataset.q));
+  const ci=document.getElementById('chat-input');
+  if(ci){ci.onfocus=()=>ci.style.borderColor='var(--primary)';ci.onblur=()=>ci.style.borderColor='var(--card-border)';ci.onkeydown=e=>{if(e.key==='Enter'){state.agentInput=ci.value;agentSend();}};ci.oninput=()=>state.agentInput=ci.value;}
+  const cs=document.getElementById('chat-send');
+  if(cs) cs.onclick=()=>{state.agentInput=document.getElementById('chat-input').value;agentSend();};
+  // scroll to bottom
+  setTimeout(()=>{const el=document.getElementById('chat-scroll');if(el) el.scrollTop=el.scrollHeight;},50);
+
+  // Policy
+  document.querySelectorAll('.policy-opt').forEach(el=>el.onclick=()=>{if(!state.policyRunning){state.policySelected=el.dataset.pid;render();}});
+  const pr=document.getElementById('policy-run');
+  if(pr) pr.onclick=runSimulation;
+}
+
+// ── Init ──
+render();
+</script>
+</body>
+</html>
